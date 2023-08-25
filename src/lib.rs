@@ -31,6 +31,15 @@ impl Sha256 {
         }
     }
 
+    pub fn reset(&mut self, state: Option<[u32; 8]>) {
+        self.state = state.unwrap_or([
+            0x6a09e667u32, 0xbb67ae85u32, 0x3c6ef372u32, 0xa54ff53au32, 0x510e527fu32, 0x9b05688cu32, 0x1f83d9abu32, 0x5be0cd19u32,
+        ]);
+        self.bit_len = 0;
+        self.data = [0u8; 64];
+        self.data_len = 0;
+    }
+
     pub fn update(state: &mut [u32; 8], data: &[u8; 64]) {
         let mut a = state[0];
         let mut b = state[1];
@@ -183,5 +192,16 @@ mod tests {
         let output = hasher.r#final();
 
         assert_eq!(hex(&output), "466e74b93621deed67d7b761c6e2b7fc7e42f9d59facf11b903d5ab5dd189cfc");
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut hasher = Sha256::new(None);
+        hasher.append("napiyon kardesim".as_bytes());
+        hasher.reset(None);
+        hasher.append("abc".as_bytes());
+        let output = hasher.r#final();
+
+        assert_eq!(hex(&output), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
     }
 }
