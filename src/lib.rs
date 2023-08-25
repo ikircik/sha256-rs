@@ -126,10 +126,62 @@ impl Sha256 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fmt::Write;
+
+    fn hex(bytes: &[u8; 32]) -> String {
+        let mut hex = String::with_capacity(64);
+
+        for &byte in bytes {
+            write!(&mut hex, "{:02x}", byte).unwrap();
+        }
+
+        hex
+    }
 
     #[test]
-    fn example_test() {
-        let var = 4;
-        assert_eq!(var, 4);
+    fn test_empty() {
+        let mut hasher = Sha256::new(None);
+        hasher.append("".as_bytes());
+        let output = hasher.r#final();
+
+        assert_eq!(hex(&output), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    }
+
+    #[test]
+    fn test_abc() {
+        let mut hasher = Sha256::new(None);
+        hasher.append("abc".as_bytes());
+        let output = hasher.r#final();
+
+        assert_eq!(hex(&output), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+    }
+
+    #[test]
+    fn test_a1m() {
+        let mut hasher = Sha256::new(None);
+        for _ in 0..1_000_000 {
+            hasher.append("a".as_bytes());
+        }
+        let output = hasher.r#final();
+
+        assert_eq!(hex(&output), "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0");
+    }
+
+    #[test]
+    fn test_rc4keysteam16() {
+        let mut hasher = Sha256::new(None);
+        hasher.append(&[0xde, 0x18, 0x89, 0x41, 0xa3, 0x37, 0x5d, 0x3a, 0x8a, 0x06, 0x1e, 0x67, 0x57, 0x6e, 0x92, 0x6d]);
+        let output = hasher.r#final();
+
+        assert_eq!(hex(&output), "067c531269735ca7f541fdaca8f0dc76305d3cada140f89372a410fe5eff6e4d");
+    }
+
+    #[test]
+    fn test_napiyon_kardesim() {
+        let mut hasher = Sha256::new(None);
+        hasher.append("napiyon kardesim".as_bytes());
+        let output = hasher.r#final();
+
+        assert_eq!(hex(&output), "466e74b93621deed67d7b761c6e2b7fc7e42f9d59facf11b903d5ab5dd189cfc");
     }
 }
