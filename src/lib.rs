@@ -83,6 +83,44 @@ impl Sha256 {
         state[6] = state[6].wrapping_add(g);
         state[7] = state[7].wrapping_add(h);
     }
+
+    pub fn append(&mut self, data: &[u8]) {
+        for i in 0..data.len() {
+            self.data[self.data_len] = data[i];
+            self.data_len = self.data_len + 1;
+
+            if self.data_len == 64 {
+                Self::update(&mut self.state, &self.data);
+                self.bit_len = self.bit_len + 512;
+                self.data_len = 0;
+            }
+        }
+    }
+
+    pub fn r#final(&mut self) -> [u8; 32] {
+        let data_bits = self.bit_len + self.data_len * 8;
+        let mut data = [0u8; 72];
+        data[0] = 128;
+
+        let offset = if self.data_len < 56 {
+            56 - self.data_len
+        } else {
+            120 - self.data_len
+        };
+
+        data[offset..offset + 8].copy_from_slice(&data_bits.to_be_bytes());
+        self.append(&data[0..offset + 8]);
+
+        let mut output = [0u8; 32];
+        for i in 0..8 {
+            let state_be_bytes = self.state[i].to_be_bytes();
+            output[i * 4] = state_be_bytes[0];
+            output[i * 4 + 1] = state_be_bytes[1];
+            output[i * 4 + 2] = state_be_bytes[2];
+            output[i * 4 + 3] = state_be_bytes[3];
+        }
+        output
+    }
 }
 
 #[cfg(test)]
