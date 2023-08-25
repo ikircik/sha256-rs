@@ -22,13 +22,66 @@ impl Sha256 {
     pub fn new(state: Option<[u32; 8]>) -> Self {
         Self {
             // initial state from section 5.3.2 in https://csrc.nist.gov/files/pubs/fips/180-2/final/docs/fips180-2.pdf
-            state: state.ok_or([
+            state: state.unwrap_or([
                 0x6a09e667u32, 0xbb67ae85u32, 0x3c6ef372u32, 0xa54ff53au32, 0x510e527fu32, 0x9b05688cu32, 0x1f83d9abu32, 0x5be0cd19u32,
-            ]).unwrap(),
+            ]),
             bit_len: 0,
             data: [0u8; 64],
             data_len: 0,
         }
+    }
+
+    pub fn update(state: &mut [u32; 8], data: &[u8; 64]) {
+        let mut a = state[0];
+        let mut b = state[1];
+        let mut c = state[2];
+        let mut d = state[3];
+        let mut e = state[4];
+        let mut f = state[5];
+        let mut g = state[6];
+        let mut h = state[7];
+
+        let mut m = [0u32; 64];
+
+        let mut j = 0;
+        for i in 0..16 {
+            m[i] = ((data[j] as u32) << 24) | ((data[j + 1] as u32) << 16) | ((data[j + 2] as u32) << 8) | (data[j + 3] as u32);
+            j = j + 4;
+        }
+
+        for i in 16..64 {
+            let sig0 = m[i - 15].rotate_right(7) ^ m[i - 15].rotate_right(18) ^ (m[i - 15] >> 3);
+            let sig1 = m[i - 2].rotate_right(17) ^ m[i - 2].rotate_right(19) ^ (m[i - 2] >> 10);
+            m[i] = sig1.wrapping_add(m[i - 7]).wrapping_add(sig0).wrapping_add(m[i - 16]);
+        }
+
+        for i in 0..64 {
+            let ep0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
+            let ep1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
+            let ch = (e & f) ^ (!e & g);
+            let maj = (a & b) ^ (a & c) ^ (b & c);
+
+            let t1 = h.wrapping_add(ep1).wrapping_add(ch).wrapping_add(K[i]).wrapping_add(m[i]);
+            let t2 = ep0.wrapping_add(maj);
+
+            h = g;
+            g = f;
+            f = e;
+            e = d.wrapping_add(t1);
+            d = c;
+            c = b;
+            b = a;
+            a = t1.wrapping_add(t2);
+        }
+
+        state[0] = state[0].wrapping_add(a);
+        state[1] = state[1].wrapping_add(b);
+        state[2] = state[2].wrapping_add(c);
+        state[3] = state[3].wrapping_add(d);
+        state[4] = state[4].wrapping_add(e);
+        state[5] = state[5].wrapping_add(f);
+        state[6] = state[6].wrapping_add(g);
+        state[7] = state[7].wrapping_add(h);
     }
 }
 
